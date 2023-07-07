@@ -1,0 +1,110 @@
+drop table if exists `sepsisdataset.vasopressor`;
+create table `sepsisdataset.vasopressor` as
+(select vaso.*,
+from `physionet-data.mimic_derived.vasopressin` as vaso
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = vaso.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.vasopressor` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.vasopressor`
+SET pressor_type = "vasopressor" where 1=1;
+ 
+ 
+--
+drop table if exists `sepsisdataset.epinephrine`;
+create table `sepsisdataset.epinephrine` as
+(select epine.*,
+from `physionet-data.mimic_derived.epinephrine` as epine
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = epine.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.epinephrine` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.epinephrine`
+SET pressor_type = "epinephrine" where 1=1;
+ 
+ 
+--
+drop table if exists `sepsisdataset.dobutamine`;
+create table `sepsisdataset.dobutamine` as
+(select dobu.*,
+from `physionet-data.mimic_derived.dobutamine` as dobu
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = dobu.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.dobutamine` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.dobutamine`
+SET pressor_type = "dobutamine" where 1=1;
+ 
+ 
+--
+drop table if exists `sepsisdataset.dopamine`;
+create table `sepsisdataset.dopamine` as
+(select dopa.*,
+from `physionet-data.mimic_derived.dopamine` as dopa
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = dopa.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.dopamine` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.dopamine`
+SET pressor_type = "dopamine" where 1=1;
+ 
+ 
+--
+drop table if exists `sepsisdataset.norepinephrine`;
+create table `sepsisdataset.norepinephrine` as
+(select norep.*,
+from `physionet-data.mimic_derived.norepinephrine` as norep
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = norep.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.norepinephrine` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.norepinephrine`
+SET pressor_type = "norepinephrine" where 1=1;
+ 
+ 
+ 
+--
+drop table if exists `sepsisdataset.phenylephrine`;
+create table `sepsisdataset.phenylephrine` as
+(select pheny.*,
+from `physionet-data.mimic_derived.phenylephrine` as pheny
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = pheny.stay_id
+and s3.sepsis3 is true
+);
+ 
+ALTER TABLE `sepsisdataset.phenylephrine` ADD COLUMN pressor_type string;
+UPDATE `sepsisdataset.phenylephrine`
+SET pressor_type = "phenylephrine" where 1=1;
+ 
+ 
+SELECT stay_id, pressor_type as activity, starttime from 
+(SELECT * FROM `sepsisdataset.vasopressor`
+UNION ALL
+SELECT * FROM `sepsisdataset.epinephrine`
+UNION ALL
+SELECT * FROM `sepsisdataset.dobutamine`
+UNION ALL
+SELECT * FROM `sepsisdataset.dopamine`
+UNION ALL
+SELECT * FROM `sepsisdataset.norepinephrine`
+UNION ALL
+SELECT * FROM `sepsisdataset.phenylephrine`
+ 
+order by stay_id, starttime) as pressor

@@ -1,0 +1,9 @@
+select stay_id, "Dialysis" as activity, charttime as starttime, dialysis_present, dialysis_active, dialysis_type from 
+(select distinct rrt.*,
+from `physionet-data.mimic_derived.rrt` as rrt
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = rrt.stay_id
+and s3.sepsis3 is true
+
+order by stay_id, charttime) as unique_rrt

@@ -1,0 +1,9 @@
+select vent.*, 
+from `physionet-data.mimic_derived.ventilation` as vent
+ 
+inner join physionet-data.mimic_derived.sepsis3 as s3
+on s3.stay_id = vent.stay_id
+and s3.sepsis3 is true
+ 
+where ventilation_status = "InvasiveVent"
+order by stay_id, starttime

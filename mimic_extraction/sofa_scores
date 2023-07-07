@@ -1,0 +1,2 @@
+select stay_id, starttime, endtime, sofa_24hours from `physionet-data.mimic_derived.sofa`
+order by stay_id
