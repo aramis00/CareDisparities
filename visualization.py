@@ -147,7 +147,7 @@ for comorbs in comorbs_list:
                     else:
                         plt.text(x = s+0.2, y= height_dict[(s,e)] + 0.1+ groups.index(k)*0.16, s=v_s+p_s, color = c_map[k], fontsize = 14, fontweight = 600 )
                     #print(v,p) old
-                    print(v_low)
+                    #print(v_low)
             plt.axis("off")
             #get frequencies of classes
             freq_sum = sum([frequencies[c][var][k_v] for k_v in frequencies[c][var].keys()])
