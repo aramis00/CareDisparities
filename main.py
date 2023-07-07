@@ -7,8 +7,8 @@ import process_mining_utils as pm
 import pandas as pd
 import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
-
-
+from scipy.stats import bootstrap
+import numpy as np
 def filter_icd(row,diags):
     for d in diags:
         if row[d] != 0:
@@ -16,12 +16,15 @@ def filter_icd(row,diags):
 
     return False
 
+def avg(nums,axis):
+    return sum(nums)/len(nums)
+
 log_raw = pd.read_csv("files/event_log.csv")
 log_raw["starttime"] = pd.to_datetime(log_raw["starttime"])
 log_raw["endtime"] = pd.to_datetime(log_raw["endtime"])
 
 #We determined the most detrimental comorbidities and perform the analysis for each of those
-for comorbs in [["renal_disease"]]:#[["age_score"]]:#,["renal_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["renal_disease"]]:#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]:
+for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#,["renal_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["renal_disease"]]:#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]:
     print("Calculating results for comorbidities:")
     print(comorbs)
     #The log can be filtered for low frequency variants, i.e., outliers. This can be done before or after applying the comorbidity filer
@@ -209,13 +212,29 @@ for comorbs in [["renal_disease"]]:#[["age_score"]]:#,["renal_disease"],["conges
                         sofa_map[(start_p, end_p)].append(log.loc[e_id]["SOFA"])
 
                 #We calculate the average over the collected metrics
-                diff_map_k[k] = {(s,e): sum(diff_map[(s,e)])/len(diff_map[(s,e)]) for (s,e) in diffs}
-                sofa_map_k[k] = {(s,e): sum(sofa_map[(s,e)])/len(sofa_map[(s,e)]) for (s,e) in sofa_map.keys()}
+                diff_map_k[k] = {(s,e): (-1,sum(diff_map[(s,e)])/len(diff_map[(s,e)])) for (s,e) in diffs}
+                sofa_map_k[k] = {(s,e): (-1,sum(sofa_map[(s,e)])/len(sofa_map[(s,e)])) for (s,e) in sofa_map.keys()}
+
                 diff_map_k_dist[k] = {(s,e) : diff_map[(s,e)] for (s,e) in diffs}
                 for (s,e) in diffs:
-                    sofa_av = -1
+                    sofa_av = (-1,-1)
+                    # We bootstrap this calculation to get confidence intervals
+                    if sum(diff_map[(s, e)]) > 0.00001 and len(diff_map[(s, e)])>10:
+                        res = bootstrap((np.asarray(diff_map[(s, e)], dtype=np.float32),), np.mean, confidence_level=0.9, random_state=33)
+                        #print(res.confidence_interval.low)
+                        #print(res.confidence_interval.high)
+                        diff_map_k[k][(s,e)] = (res.confidence_interval.low,res.confidence_interval.high)
+                    elif len(diff_map[(s, e)])<0.00001:
+                        diff_map_k[k][(s, e)] = (0, 0)
+
                     if (s,e) in sofa_map_k[k].keys():
                         sofa_av = sofa_map_k[k][(s,e)]
+                        if len(sofa_map[(s, e)]) > 10:
+                            res = bootstrap((np.asarray(sofa_map[(s, e)], dtype=np.float32),), np.mean,
+                                            confidence_level=0.9, random_state=33)
+                            #print(res.confidence_interval.low)
+                            #print(res.confidence_interval.high)
+                            sofa_av = (res.confidence_interval.low, res.confidence_interval.high)
                     results_dict[c][var][k][(s, e)] = (diff_map_k[k][(s,e)],sofa_av)
             if skip:
                 if var in results_dict[c]:

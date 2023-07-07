@@ -3,9 +3,9 @@
 import pickle
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
-
+import math
 #Use the comorbitities that you would like to control for, you should have calculated the results first using main.py
-comorbs_list = [["renal_disease"]]#[["age_score"]]#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]
+comorbs_list = [["renal_disease"]]#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["age_score"]]#["renal_disease"],["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]
 for comorbs in comorbs_list:
     res = {}
     variants = {}
@@ -105,16 +105,16 @@ for comorbs in comorbs_list:
                     first_group = k
                     first_class = False
                 for (s,e) in res[c][var][k].keys():
-                    v = res[c][var][k][(s, e)][0]
-                    sofa_v = res[c][var][k][(s, e)][1]
+                    (v_low, v_high) = res[c][var][k][(s, e)][0]
+                    (sofa_v_low, sofa_v_high) = res[c][var][k][(s, e)][1]
                     # can be added if hypothesis test is conducted
                     #(v,p) = res[c][var][k][(s,e)] old with p
                     if (s,e) not in height_dict.keys():
                         continue
                     #can be added if hypothesis test is conducted
                     p_s = "" #if p > 0.01 else "*"
-                    v_s = str(int(v/3600))+"h"
-                    sofa_s = str(int(sofa_v)) #if not math.isnan(sofa_v) else -1
+                    v_s = str(int(v_low/3600))+"h"+", "+str(int(v_high/3600))+"h"
+                    sofa_s = str(round(sofa_v_low,1))+", "+ str(round(sofa_v_high,1))#if not math.isnan(sofa_v) else -1
                     if event_dict[(s,e)]:
                         # This could be used to display * when conducting hypothesis testing for each difference
                         # if event_act_dict[(s,e)] != "ADMIT" and event_act_dict[(s,e)] != "DISCHARGE":
@@ -147,7 +147,7 @@ for comorbs in comorbs_list:
                     else:
                         plt.text(x = s+0.2, y= height_dict[(s,e)] + 0.1+ groups.index(k)*0.16, s=v_s+p_s, color = c_map[k], fontsize = 14, fontweight = 600 )
                     #print(v,p) old
-                    print(v)
+                    print(v_low)
             plt.axis("off")
             #get frequencies of classes
             freq_sum = sum([frequencies[c][var][k_v] for k_v in frequencies[c][var].keys()])
@@ -155,7 +155,7 @@ for comorbs in comorbs_list:
             plt.legend(loc = "upper left",handles=[mpatches.Patch(color=c_map[g], label=g+" ("+"{0:.0%}".format(freq_dict[g])+")") for g in reversed(groups)])
             #plt.show()
             plt.title("Time lags for variant with " + str(len(variants[var])) +" patients (" + str(int((len(variants[var]) / total_number) * 10000) / 100) + "%)")
-            plt.savefig(c+"_new_filter/"+var.replace("None","N")+".png", dpi = 600)
+            plt.savefig("results/"+c+"/"+var.replace("None","N")+".png", dpi = 600)
             plt.show()
 
 
