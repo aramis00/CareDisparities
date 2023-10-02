@@ -13,6 +13,8 @@ frequencies = {}
 sens_char = "gender"
 
 stats = pd.read_csv("case_stats.csv")
+stats.loc[stats["ethnicity"]=="UNKNOWN","ethnicity"] = "OTHER"
+stats.loc[stats["ethnicity"]=="UNABLE TO OBTAIN","ethnicity"] = "OTHER"
 print(stats.columns)
 print(stats)
 for c in ["anchor_age"]:#,"charlson_comorbidity_index"]:
@@ -28,7 +30,7 @@ for c in ["anchor_age"]:#,"charlson_comorbidity_index"]:
     print('Mann-Whitney U Test Statistics=%.3f, p=%.3f' % (stat, p_value))
 
 
-for c in ["ethnicity","language"]:#"language"
+for c in ["ethnicity","language"]:#"gender"
     grouped = stats.groupby(sens_char)[c].value_counts()
     print(grouped)
     grouped = stats.groupby(sens_char)[c].value_counts(normalize=True)

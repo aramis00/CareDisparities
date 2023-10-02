@@ -5,7 +5,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import math
 #Use the comorbitities that you would like to control for, you should have calculated the results first using main.py
-comorbs_list = [["renal_disease"]]#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["age_score"]]#["renal_disease"],["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]
+comorbs_list = [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["renal_disease"]]#[["malignant_cancer","metastatic_solid_tumor "]]#[["diabetes_without_cc","diabetes_with_cc"]]#[["age_score"]]#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["age_score"]]#["renal_disease"],["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]
 for comorbs in comorbs_list:
     res = {}
     variants = {}
@@ -25,7 +25,7 @@ for comorbs in comorbs_list:
     total_number = sum([len(variants[var]) for var in variants.keys()])
     for c in res.keys():
         for var in res[c].keys():
-            print(variants[var][0][2])
+            #print(variants[var][0][2])
             var_arr = variants[var][0][2]
             lines = []
             for l in var_arr:

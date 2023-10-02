@@ -9,9 +9,11 @@ import matplotlib.pyplot as plt
 from scipy.stats import chi2_contingency
 from scipy.stats import bootstrap
 import numpy as np
+
+
 def filter_icd(row,diags):
     for d in diags:
-        if row[d] != 0:
+        if row[d] ==1:
             return True
 
     return False
@@ -23,12 +25,14 @@ log_raw = pd.read_csv("files/event_log.csv")
 log_raw["starttime"] = pd.to_datetime(log_raw["starttime"])
 log_raw["endtime"] = pd.to_datetime(log_raw["endtime"])
 
+print(str(len(log_raw["stay_id"].unique()))+ " patients")
 #We determined the most detrimental comorbidities and perform the analysis for each of those
-for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#,["renal_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["renal_disease"]]:#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]:
+for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#[["malignant_cancer","metastatic_solid_tumor"]]:#[["diabetes_without_cc","diabetes_with_cc"]]:#[["age_score"]]:#[["mild_liver_disease","severe_liver_disease"]]:#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#,["renal_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["renal_disease"]]:#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]:
     print("Calculating results for comorbidities:")
     print(comorbs)
     #The log can be filtered for low frequency variants, i.e., outliers. This can be done before or after applying the comorbidity filer
     log = pm.clean_low_frequency_variants(log_raw, 50)
+    print(str(len(log["stay_id"].unique())) + " patients")
     #The log is filtered for comorbidities here
     log["filter"] = log.apply(lambda x: filter_icd(x,comorbs),axis=1)
     #We could apply further filters
@@ -39,7 +43,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
 
     print("Filtering Done")
     #print(log)
-
+    print(str(len(log["stay_id"].unique())) + " patients")
     #We calculate the process mining artifacts
     variant_dict = pm.log_to_variants_dict(log)
     class_frequency_dict = {}
@@ -48,10 +52,9 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
 
     # We generate a table with the variable for which we would like to generate statistics later
     stats_variables = ["anchor_age", "charlson_comorbidity_index", "gender", "ethnicity", "language"]
-    stats_log = log_raw.groupby("stay_id")[stats_variables].agg("first")
+    stats_log = log.groupby("stay_id")[stats_variables].agg("first")
     # print(stats_log)
     stats_log.to_csv("case_stats.csv", index=False)
-
 
 
 
