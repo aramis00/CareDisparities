@@ -24,7 +24,8 @@ def avg(nums,axis):
 log_raw = pd.read_csv("files/event_log.csv")
 log_raw["starttime"] = pd.to_datetime(log_raw["starttime"])
 log_raw["endtime"] = pd.to_datetime(log_raw["endtime"])
-
+log_raw["language"] = log_raw["language"].apply(lambda x: "Non-English speaking" if x == "Non-native speaker" else "English speaking")
+log_raw = log_raw.rename(columns = {"gender":"sex"})
 print(str(len(log_raw["stay_id"].unique()))+ " patients")
 #We determined the most detrimental comorbidities and perform the analysis for each of those
 for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#[["malignant_cancer","metastatic_solid_tumor"]]:#[["diabetes_without_cc","diabetes_with_cc"]]:#[["age_score"]]:#[["mild_liver_disease","severe_liver_disease"]]:#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["age_score"]]:#,["renal_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]:#[["renal_disease"]]:#,["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]:
@@ -51,7 +52,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
     #print(frequencies)
 
     # We generate a table with the variable for which we would like to generate statistics later
-    stats_variables = ["anchor_age", "charlson_comorbidity_index", "gender", "ethnicity", "language"]
+    stats_variables = ["anchor_age", "charlson_comorbidity_index", "sex", "ethnicity", "language"]
     stats_log = log.groupby("stay_id")[stats_variables].agg("first")
     # print(stats_log)
     stats_log.to_csv("case_stats.csv", index=False)
@@ -59,7 +60,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
 
 
     #The attributes for which we would like to split patients and investiage for disparities
-    cols = ["anchor_year_group", "gender", "ethnicity", "language"]
+    cols = [ "sex", "language", "ethnicity","anchor_year_group"]
     logs = {}
 
     #We initialize a dictionary for each attribute
@@ -82,7 +83,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
         results_dict[c] = {}
         overall_var_dict = {}
         class_frequency_dict[c] = {}
-        plt.rcParams["figure.figsize"] = (20, 3)
+        plt.rcParams["figure.figsize"] = (14, 3)
         dist = {}
         vals = list(logs[c].keys())
         #We determine the variants that are present for each attribute value
@@ -117,14 +118,30 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
                     lists[i].append(dist[k][var])
                 else:
                     lists[i].append(0)
+
         draw_df = pd.DataFrame([lists[k] for k in lists.keys()],
                                columns=column_list)
+        if "F" in column_list:
+            draw_df = draw_df.rename(columns={'F': 'Female', 'M': 'Male'})
+
+        # Assuming draw_df is a DataFrame object
+        ax = draw_df.plot(x="Variant", kind='bar', stacked=False,
+                          width=0.8)
+        ax.set_title('Variant Distribution over ' + c, fontsize=16)
+        ax.set_xlabel('Variant', fontsize=14)
+        ax.set_ylabel('Relative Frequency', fontsize=14)
+        ax.tick_params(axis='x', labelsize=14)
+        ax.tick_params(axis='y', labelsize=14)
+        ax.legend(fontsize=10)
+        plt.tight_layout()
+        plt.savefig(c + comorbs[0] + '.png', dpi=600)
+        plt.show()
         #Draw the distribution oover variants
-        draw_df.plot(x="Variant",
-                     kind='bar',
-                     stacked=False,
-                     title='Variant Distribution over ' + c)
-        plt.savefig(c +comorbs[0]+'.png', dpi = 400)
+        # draw_df.plot(x="Variant",
+        #              kind='bar',
+        #              stacked=False,
+        #              title='Variant Distribution over ' + c)
+        # plt.savefig(c +comorbs[0]+'.png', dpi = 400)
 
         # We construct the frequency distribution to feed into the statistical test
         freq_list = {}

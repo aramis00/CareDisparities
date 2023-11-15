@@ -10,7 +10,7 @@ variants = {}
 controls = {}
 frequencies = {}
 
-sens_char = "gender"
+sens_char = "sex"
 
 stats = pd.read_csv("case_stats.csv")
 stats.loc[stats["ethnicity"]=="UNKNOWN","ethnicity"] = "OTHER"
