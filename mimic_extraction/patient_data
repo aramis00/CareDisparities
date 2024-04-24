@@ -1,4 +1,4 @@
-SELECT icu.*,adm.language,pat.*,charlson.* 
+SELECT icu.*,adm.language,adm.insurance,pat.*,charlson.*
 FROM physionet-data.mimic_derived.icustay_detail as icu 
 inner join physionet-data.mimic_derived.sepsis3 as s3
 on s3.stay_id = icu.stay_id
