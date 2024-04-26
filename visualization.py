@@ -8,11 +8,15 @@ import math
 comorbs_list = [["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["renal_disease"]]#[["malignant_cancer","metastatic_solid_tumor "]]#[["diabetes_without_cc","diabetes_with_cc"]]#[["age_score"]]#[["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"]]#[["age_score"]]#["renal_disease"],["mild_liver_disease","severe_liver_disease"],["congestive_heart_failure","myocardial_infarct","chronic_pulmonary_disease"],["malignant_cancer","malignant_cancer"]]
 for comorbs in comorbs_list:
     res = {}
+    res_outcome = {}
     variants = {}
     controls = {}
     frequencies = {}
     with open('result'+comorbs[0]+'.pkl', 'rb') as f:
         res = pickle.load(f)
+
+    with open('result_outcome'+comorbs[0]+'.pkl', 'rb') as f:
+        res_outcome = pickle.load(f)
 
     with open('variants'+comorbs[0]+'.pkl', 'rb') as f:
         variants = pickle.load(f)
@@ -113,8 +117,14 @@ for comorbs in comorbs_list:
                         continue
                     #can be added if hypothesis test is conducted
                     p_s = "" #if p > 0.01 else "*"
-                    v_s = str(int(v_low/3600))+"h"+", "+str(int(v_high/3600))+"h"
-                    sofa_s = str(round(sofa_v_low,1))+", "+ str(round(sofa_v_high,1))#if not math.isnan(sofa_v) else -1
+                    v_s_mid = (v_low + v_high)/2
+                    v_dev = v_high - v_s_mid
+                    v_s = str(int(v_s_mid/3600))+""+"±"+str(int(v_dev/3600))+"h"
+                    #v_s = str(int(v_low/3600))+"h"+", "+str(int(v_high/3600))+"h"
+                    sofa_s_mid = (sofa_v_low + sofa_v_high) / 2
+                    sofa_s_dev = sofa_v_high - sofa_s_mid
+                    sofa_s = str(round(sofa_s_mid, 1)) + "±" + str(round(sofa_s_dev, 1))
+                    #sofa_s = str(round(sofa_v_low,1))+", "+ str(round(sofa_v_high,1))#if not math.isnan(sofa_v) else -1
                     if event_dict[(s,e)]:
                         # This could be used to display * when conducting hypothesis testing for each difference
                         # if event_act_dict[(s,e)] != "ADMIT" and event_act_dict[(s,e)] != "DISCHARGE":
@@ -152,9 +162,38 @@ for comorbs in comorbs_list:
             #get frequencies of classes
             freq_sum = sum([frequencies[c][var][k_v] for k_v in frequencies[c][var].keys()])
             freq_dict = {k_v: frequencies[c][var][k_v]/freq_sum for k_v in frequencies[c][var].keys()}
-            plt.legend(loc = "upper left",handles=[mpatches.Patch(color=c_map[g], label=g+" ("+"{0:.0%}".format(freq_dict[g])+")") for g in reversed(groups)])
+            legend1 = plt.legend(loc = "upper left",handles=[mpatches.Patch(color=c_map[g], label=g+" ("+"{0:.0%}".format(freq_dict[g])+")") for g in reversed(groups)],fontsize=16)
+            plt.gca().add_artist(legend1)
+            # Add the outcome legend
+            outcome = "LOS"
+            patches = []
+            for g in reversed(groups):
+                out_mid = (res_outcome[c][var][g][outcome][0] + res_outcome[c][var][g][outcome][1])/2
+                out_dev = res_outcome[c][var][g][outcome][1] - out_mid
+                patches.append(mpatches.Patch(color=c_map[g], label=g + " " + "{0:.1f}".format(out_mid) + "±" + "{0:.1f}d".format(out_dev)))
+            legend2 = plt.legend(loc="upper right", handles=patches, fontsize=16, title=outcome)
+
+            legend2.get_title().set_fontsize("16")
+            plt.gca().add_artist(legend2)
+
+            outcome = "Mortality"
+            patches = []
+            for g in reversed(groups):
+                out_mid = (res_outcome[c][var][g][outcome][0] + res_outcome[c][var][g][outcome][1]) / 2
+                out_dev = res_outcome[c][var][g][outcome][1] - out_mid
+                patches.append(mpatches.Patch(color=c_map[g],
+                                              label=g + " " + "{0:.1%}".format(out_mid) + "±" + "{0:.1%}".format(
+                                                  out_dev)))
+            legend2 = plt.legend(loc="lower right", handles=patches, fontsize=16, title=outcome)
+
+            legend2.get_title().set_fontsize("16")
+            plt.gca().add_artist(legend2)
+
+
+            plt.title("Time lags for variant with " + str(len(variants[var])) +" patients (" + str(int((len(variants[var]) / total_number) * 10000) / 100) + "%)",fontsize=20)
+            #plt.tight_layout()
             #plt.show()
-            plt.title("Time lags for variant with " + str(len(variants[var])) +" patients (" + str(int((len(variants[var]) / total_number) * 10000) / 100) + "%)")
+
             plt.savefig("results/"+c+"/"+var.replace("None","N")+".png", dpi = 600)
             plt.show()
 

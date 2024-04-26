@@ -52,7 +52,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
     #print(frequencies)
 
     # We generate a table with the variable for which we would like to generate statistics later
-    stats_variables = ["anchor_age", "charlson_comorbidity_index", "sex", "ethnicity", "language"]
+    stats_variables = ["anchor_age", "charlson_comorbidity_index", "sex", "ethnicity", "language","los_hospital","dod","insurance"]
     stats_log = log.groupby("stay_id")[stats_variables].agg("first")
     # print(stats_log)
     stats_log.to_csv("case_stats.csv", index=False)
@@ -60,7 +60,8 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
 
 
     #The attributes for which we would like to split patients and investiage for disparities
-    cols = [ "sex", "language", "ethnicity","anchor_year_group"]
+    cols = ["sex", "language", "ethnicity","anchor_year_group","insurance"]
+    outcomes = ["dod","los_hospital"]
     logs = {}
 
     #We initialize a dictionary for each attribute
@@ -76,11 +77,13 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
     #print(logs)
 
     results_dict = {}
+    results_stats_dict = {}
 
     #We conduct the comparison for each attribute. We determine the possible values of this attribute and compute the
     #statistics for each variant and each attribute value
     for c in cols:
         results_dict[c] = {}
+        results_stats_dict[c] = {}
         overall_var_dict = {}
         class_frequency_dict[c] = {}
         plt.rcParams["figure.figsize"] = (14, 3)
@@ -172,6 +175,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
         for i in range(0, len(all_variants)):
             var = all_variants[i]
             results_dict[c][var] = {}
+            results_stats_dict[c][var] = {}
             class_frequency_dict[c][var] = {}
             (case, interval, variant_array, variant_string) = variant_dict[var][0]
 
@@ -193,6 +197,7 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
                     break
 
                 results_dict[c][var][k] = {}
+                results_stats_dict[c][var][k] = {}
 
                 #We retrieve all a cases of the variant for this attribute value
                 case_list = overall_var_dict[k][var]
@@ -256,6 +261,52 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
                             #print(res.confidence_interval.high)
                             sofa_av = (res.confidence_interval.low, res.confidence_interval.high)
                     results_dict[c][var][k][(s, e)] = (diff_map_k[k][(s,e)],sofa_av)
+
+
+                    #compute survival rate and LOS
+                    died = []
+                    total = 0
+                    los_list = []
+                    #total_los = 0
+                    for (case, interval, variant_array, variant_string) in case_list:
+                        e_id = list(interval.keys())[0]
+                        dod = log.loc[e_id]["dod"]
+                        los = log.loc[e_id]["los_hospital"]
+                        los_list.append(int(los))
+                        #total_los += los
+                        if isinstance(dod, str):
+                            died.append(1)
+                        else:
+                            died.append(0)
+                        total += 1
+                    #if not np.isfinite(np.asarray(died, dtype=np.float32)).all():
+                    #    print(died)
+
+                    #print(died)
+                    if sum(died) == 0:
+                        results_stats_dict[c][var][k]["Mortality"] = (0, 0)
+                    elif sum(died) == len(died):
+                        results_stats_dict[c][var][k]["Mortality"] = (1, 1)
+                    elif len(died) <= 10:
+                        results_stats_dict[c][var][k]["Mortality"] = (-1, -1)
+                    else:
+                        mort_res = bootstrap((np.asarray(died, dtype=np.float32),), np.mean, confidence_level=0.9, random_state=33)
+                        results_stats_dict[c][var][k]["Mortality"] = (mort_res.confidence_interval.low, mort_res.confidence_interval.high)
+
+
+                    #if not np.isfinite(np.asarray(los_list, dtype=np.float32)).all():
+                    #    print(los_list)
+                    #add LOS
+                    if sum(los_list) == 0:
+                        results_stats_dict[c][var][k]["LOS"] = (0, 0)
+                    elif sum(los_list) == len(los_list):
+                        results_stats_dict[c][var][k]["LOS"] = (1, 1)
+                    elif len(los_list) <= 10:
+                        results_stats_dict[c][var][k]["LOS"] = (-1, -1)
+                    else:
+                        los_res = bootstrap((np.asarray(los_list, dtype=np.float32),), np.mean, confidence_level=0.9, random_state=33)
+                        results_stats_dict[c][var][k]["LOS"] = (los_res.confidence_interval.low, los_res.confidence_interval.high)
+
             if skip:
                 if var in results_dict[c]:
                     del results_dict[c][var]
@@ -298,6 +349,9 @@ for comorbs in [["congestive_heart_failure","myocardial_infarct","chronic_pulmon
 
     with open('result'+comorbs[0]+'.pkl', 'wb') as fp:
         pickle.dump(results_dict, fp)
+
+    with open('result_outcome' + comorbs[0] + '.pkl', 'wb') as fp:
+        pickle.dump(results_stats_dict, fp)
 
     with open('variants'+comorbs[0]+'.pkl', 'wb') as fp:
         pickle.dump(variant_dict, fp)
