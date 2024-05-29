@@ -1,4 +1,4 @@
-select stay_id, "Dialysis" as activity, charttime as starttime, dialysis_present, dialysis_active, dialysis_type from 
+select stay_id, charttime as starttime, dialysis_present, dialysis_active, dialysis_type from 
 (select distinct rrt.*,
 from `physionet-data.mimic_derived.rrt` as rrt
  
